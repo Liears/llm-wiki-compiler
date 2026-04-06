@@ -11,6 +11,11 @@ This file defines the structure and conventions for this knowledge base wiki. It
 {For each topic, list slug and one-line description}
 - {topic-slug}: {what this topic covers}
 
+## Concepts
+
+{Cross-cutting patterns that span 3+ topics. Interpretive, not just factual.}
+- {concept-slug}: {what pattern this captures} — connects [{topic1}, {topic2}, {topic3}]
+
 ## Article Structure
 
 Each topic article follows this format:

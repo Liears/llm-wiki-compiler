@@ -72,19 +72,69 @@ Relative paths should be from the `topics/` directory to the source file.
 
 **Parallel compilation:** When possible, compile multiple topic articles in parallel using subagents. Each subagent gets one topic + its source files. This significantly speeds up first-run compilation.
 
-## Phase 3.5: Generate or Update Schema
+## Phase 3.5: Discover and Compile Concept Articles
+
+After topic articles are written, look for cross-cutting patterns that span multiple topics. These become **concept articles** -- stored in `{output}/concepts/`.
+
+**How to discover concepts:**
+
+1. Read all topic articles that were just compiled (or all if first run)
+2. Look for patterns that appear in 3+ topic articles:
+   - **Recurring decisions** -- the same tradeoff appearing in different contexts (e.g., "speed vs quality" showing up in retention decisions, push notification strategy, and experiment design)
+   - **Relationship patterns** -- a person, team, or stakeholder who appears across multiple topics with consistent dynamics
+   - **Methodology evolution** -- how an approach changed over time across topics (e.g., "how we measure retention" evolving from n-day to bracket)
+   - **Recurring failures** -- the same type of mistake across different domains (e.g., "trusting aggregated data without checking raw events")
+3. Check `schema.md` for existing concepts -- prefer updating existing concept articles over creating new ones
+4. Only create a concept if it genuinely connects 3+ topics with a non-obvious insight. Don't force concepts.
+
+**Concept article format:**
+
+Write to `{output}/concepts/{concept-slug}.md`:
+
+```markdown
+---
+concept: {Concept Name}
+last_compiled: {YYYY-MM-DD}
+topics_connected: [{topic1}, {topic2}, {topic3}]
+status: active
+---
+
+# {Concept Name}
+
+## Pattern
+{1-2 paragraphs describing the cross-cutting pattern. What keeps recurring and why.}
+
+## Instances
+{Each time this pattern appeared, with dates and context}
+- **{date}** in [[../topics/{topic}]]: {what happened}
+- **{date}** in [[../topics/{topic}]]: {what happened}
+
+## What This Means
+{Synthesis -- what the pattern tells you about your work, decisions, or blind spots.
+This is the "so what" that Farzapedia calls the writer's job.}
+
+## Sources
+- [[../topics/{topic1}]]
+- [[../topics/{topic2}]]
+```
+
+**Important:** Concept articles are interpretive, not just factual. They answer "what does this pattern mean?" not just "what happened?" This is what makes them useful for strategic and creative thinking.
+
+**Create the concepts/ directory** if it doesn't exist.
+
+## Phase 3.7: Generate or Update Schema
 
 If `{output}/schema.md` does not exist (first run):
 1. Generate it from `${CLAUDE_PLUGIN_ROOT}/templates/schema-template.md`
-2. Fill in the Topics section with all discovered topic slugs and descriptions
-3. Add an Evolution Log entry: "{today's date}: Initial schema generated from {N} topics"
+2. Fill in the Topics section AND Concepts section with all discovered slugs and descriptions
+3. Add an Evolution Log entry: "{today's date}: Initial schema generated from {N} topics, {N} concepts"
 
 If `{output}/schema.md` already exists:
-1. Read it BEFORE Phase 2 (classification) -- use its topic list and naming conventions
-2. After Phase 3 (compilation), check for new topics not in the schema
-3. Add any new topics to the schema's Topics section
-4. Add an Evolution Log entry if topics were added: "{today's date}: Added {topic} -- {reason}"
-5. Never remove topics from schema without human approval -- flag them as candidates instead
+1. Read it BEFORE Phase 2 (classification) -- use its topic list, concept list, and naming conventions
+2. After Phase 3.5 (concepts), check for new topics and concepts not in the schema
+3. Add any new topics/concepts to the schema
+4. Add an Evolution Log entry if anything was added: "{today's date}: Added {slug} -- {reason}"
+5. Never remove topics or concepts from schema without human approval -- flag them as candidates instead
 
 The schema is the source of truth for wiki structure. The human can edit it between compiles to rename topics, merge them, or change conventions. The compiler respects those changes.
 

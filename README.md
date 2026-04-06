@@ -123,6 +123,17 @@ This gives you the speed of the wiki (84% fewer tokens) without sacrificing accu
 
 The wiki output is plain markdown with Obsidian-style `[[wikilinks]]`. Open `wiki/INDEX.md` in Obsidian and you'll see the full knowledge base with bidirectional links to source files.
 
+### Concept Articles (Cross-Cutting Patterns)
+
+After compiling topic articles, the compiler looks for patterns that span 3+ topics and generates **concept articles** in `wiki/concepts/`. These are interpretive, not just factual -- they answer "what does this pattern mean?" not just "what happened?"
+
+Examples from a real project:
+- **"Speed vs Quality Tradeoff"** -- 6 instances where this decision appeared across retention, push notifications, and experiment design
+- **"Working with Nish"** -- communication patterns and decision dynamics synthesized from 24 meetings
+- **"Evolution of Retention Thinking"** -- how the approach changed from Oct 2025 to Apr 2026 across analytics, strategy, and experiments
+
+Concept articles are discovered automatically during compilation. You can also seed them in `schema.md` if you know what patterns you want tracked.
+
 ### Schema Document
 
 On first compile, a `schema.md` is generated in your wiki output directory. It defines your wiki's structure: topic list, naming conventions, article format, and cross-reference rules.
