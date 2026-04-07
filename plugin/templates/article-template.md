@@ -1,3 +1,6 @@
+<!-- DEFAULT TEMPLATE: Used when .wiki-compiler.json has no article_sections field.
+     New projects get custom sections generated during /wiki-init based on actual source content. -->
+
 ---
 topic: {Topic Name}
 last_compiled: {YYYY-MM-DD}

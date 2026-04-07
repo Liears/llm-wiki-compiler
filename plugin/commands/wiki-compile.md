@@ -14,9 +14,10 @@ Compile all configured markdown source files into a topic-based wiki.
 3. **Read schema** from `{output}/schema.md` if it exists. Use it to guide topic/concept classification and naming. If it doesn't exist (first run), it will be generated in Phase 3.7.
 
 4. **Invoke the `wiki-compiler` skill** to run the compilation:
+   - Pass `article_sections` from config to the skill (if present — legacy configs may not have this field)
    - Phase 1: Scan sources
    - Phase 2: Classify and discover topics (respecting schema if present)
-   - Phase 3: Compile topic articles (use parallel agents when possible)
+   - Phase 3: Compile topic articles using `article_sections` for structure (use parallel agents when possible)
    - Phase 3.5: Discover and compile concept articles (cross-cutting patterns)
    - Phase 3.7: Generate or update schema.md
    - Phase 4: Update INDEX.md (now includes concepts section)

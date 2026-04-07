@@ -17,6 +17,42 @@ You have 100+ markdown files across meetings, strategy docs, session notes, and 
 **Before:** Read 13+ raw files (~3,200 lines) per session
 **After:** Read INDEX + 2 topic articles (~330 lines) per session
 
+### How It Works
+
+```mermaid
+flowchart LR
+    subgraph Sources["📁 Raw Sources (you own)"]
+        M1["meetings/"]
+        M2["strategy/"]
+        M3["research/"]
+        M4["notes/"]
+    end
+
+    subgraph Commands["⚡ Commands"]
+        INIT["/wiki-init<br/>samples files<br/>proposes structure"]
+        COMPILE["/wiki-compile<br/>batch compilation"]
+        INGEST["/wiki-ingest<br/>single file, interactive"]
+        SEARCH["/wiki-search<br/>find anything"]
+        LINT["/wiki-lint<br/>health check"]
+    end
+
+    subgraph Wiki["📖 Compiled Wiki (LLM owns)"]
+        INDEX["INDEX.md"]
+        T1["topics/retention.md"]
+        T2["topics/onboarding.md"]
+        T3["topics/..."]
+        C1["concepts/..."]
+        SCHEMA["schema.md"]
+    end
+
+    Sources -->|"383 files · 13 MB"| COMPILE --> Wiki
+    Sources -->|"1 file"| INGEST --> Wiki
+    INIT -->|"creates config +<br/>article structure"| COMPILE
+    Wiki -->|"13 articles · 161 KB<br/>84% fewer tokens"| LLM["🤖 Your LLM Agent<br/>reads wiki, not raw files"]
+    LINT -.->|"checks"| Wiki
+    SEARCH -.->|"searches"| Wiki
+```
+
 ## Install
 
 ### From GitHub
@@ -43,7 +79,8 @@ claude --plugin-dir /path/to/llm-wiki-compiler/plugin
 ## Quick Start
 
 ```bash
-# 1. Initialize — auto-detects your markdown directories, creates config
+# 1. Initialize — auto-detects directories, samples your files, proposes a
+#    domain-specific article structure for your approval
 /wiki-init
 
 # 2. Compile — reads all sources, creates topic articles (5-10 min first run)
@@ -63,8 +100,10 @@ After step 4, Claude naturally reads wiki articles as part of its normal session
 
 | Command | Purpose |
 |---------|---------|
-| `/wiki-init` | One-time setup -- auto-detects markdown directories, creates config |
+| `/wiki-init` | One-time setup -- auto-detects markdown directories, samples files, proposes custom article structure |
 | `/wiki-compile` | Compiles source files into topic articles (incremental -- only recompiles changes). Generates `schema.md` on first run. |
+| `/wiki-ingest` | Add a single source interactively -- read, discuss key takeaways, update relevant wiki articles |
+| `/wiki-search` | Search across wiki articles by keyword or phrase |
 | `/wiki-lint` | Health checks -- finds stale articles, orphan pages, missing cross-references, contradictions, low coverage |
 | `/wiki-query` | Optional -- Q&A against the wiki. Can file useful answers back into wiki articles. |
 | `/wiki-upgrade` | Update the plugin to the latest version from GitHub |
@@ -88,15 +127,18 @@ Change mode by editing `.wiki-compiler.json`:
 
 ### What Gets Compiled
 
-Each topic article contains:
-- **Summary** — 2-3 paragraph briefing (standalone understanding)
-- **Timeline** — Key events with dates
-- **Current State** — What's true right now
-- **Key Decisions** — With rationale and source links
-- **Experiments & Results** — Status table
-- **Gotchas & Known Issues** — Topic-specific traps
-- **Open Questions** — Unresolved threads
-- **Sources** — Backlinks to every raw file (Obsidian wikilinks)
+During `/wiki-init`, the compiler samples your source files and proposes an article structure that fits your domain. You approve (or tweak) the sections before anything gets compiled.
+
+For example, a product team's wiki might get:
+- **Summary** — **Timeline** — **Current State** — **Key Decisions** — **Experiments & Results** — **Gotchas** — **Open Questions** — **Sources**
+
+While a research wiki might get:
+- **Summary** — **Key Findings** — **Methodology** — **Evidence** — **Gaps & Contradictions** — **Open Questions** — **Sources**
+
+And a book notes wiki might get:
+- **Summary** — **Characters** — **Themes** — **Plot Threads** — **Connections** — **Quotes** — **Sources**
+
+The structure is saved in `.wiki-compiler.json` and can be edited anytime. **Summary** and **Sources** are always included.
 
 ### Coverage Indicators (Best of Both Worlds)
 
@@ -129,7 +171,7 @@ After compiling topic articles, the compiler looks for patterns that span 3+ top
 
 Examples from a real project:
 - **"Speed vs Quality Tradeoff"** -- 6 instances where this decision appeared across retention, push notifications, and experiment design
-- **"Working with Nish"** -- communication patterns and decision dynamics synthesized from 24 meetings
+- **"Cross-Team Decision Patterns"** -- communication patterns and decision dynamics synthesized from 24 meetings
 - **"Evolution of Retention Thinking"** -- how the approach changed from Oct 2025 to Apr 2026 across analytics, strategy, and experiments
 
 Concept articles are discovered automatically during compilation. You can also seed them in `schema.md` if you know what patterns you want tracked.
@@ -180,8 +222,27 @@ When `/wiki-query` produces a useful synthesis that connects information across 
 | `sources` | Directories to scan for .md files |
 | `output` | Where compiled wiki lives |
 | `mode` | `staging` / `recommended` / `primary` |
+| `article_sections` | Article structure — generated during `/wiki-init` based on your content (see below) |
 | `topic_hints` | Optional seed topics to guide classification |
 | `link_style` | `obsidian` (wikilinks) or `markdown` (standard links) |
+
+### Custom Article Structure
+
+The `article_sections` array defines what sections appear in each topic article. It's generated during `/wiki-init` by sampling your source files — the compiler proposes sections that fit your domain, and you approve or tweak them.
+
+```json
+"article_sections": [
+  { "name": "Summary", "description": "standalone briefing of the topic", "required": true },
+  { "name": "Key Findings", "description": "main discoveries and insights" },
+  { "name": "Methodology", "description": "approaches and methods used" },
+  { "name": "Open Questions", "description": "unresolved threads and gaps" },
+  { "name": "Sources", "description": "backlinks to all contributing files", "required": true }
+]
+```
+
+You can edit this array anytime — add, remove, or rename sections. The compiler will use your updated structure on the next `/wiki-compile` run. `Summary` and `Sources` are required and cannot be removed.
+
+If `article_sections` is missing (older configs), the compiler falls back to a default template.
 
 ## Safety Guarantees
 
@@ -255,6 +316,32 @@ After the first full compile, `/wiki-compile` only recompiles topics whose sourc
 ```
 /wiki-compile --topic retention
 ```
+
+### Interactive Ingest
+
+Add sources one at a time with `/wiki-ingest`:
+
+```
+/wiki-ingest path/to/new-meeting-notes.md
+```
+
+The compiler reads the file, shows you key takeaways, asks what to emphasize, then updates all relevant topic articles. A single source might touch multiple topics — the compiler handles the cross-referencing.
+
+This is Karpathy's recommended workflow for staying involved with your knowledge base as it grows. Use `/wiki-compile` for batch processing, `/wiki-ingest` for interactive single-source additions.
+
+### Wiki Search
+
+Search your compiled wiki:
+
+```
+/wiki-search retention experiments
+```
+
+Searches topic names first (fast), then full article content if needed. Results include coverage indicators so you know when to trust the wiki vs read raw sources.
+
+For synthesis questions that require connecting multiple topics, use `/wiki-query` instead.
+
+For large wikis (100+ topics), consider adding [qmd](https://github.com/jina-ai/qmd) as an MCP server for hybrid BM25/vector search with LLM re-ranking.
 
 ### Scheduled Compilation
 

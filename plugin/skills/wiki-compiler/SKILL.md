@@ -51,13 +51,13 @@ For EACH topic that has new or changed source files:
 
 1. Read ALL source files classified under that topic (need full context, not just changed files)
 2. Write the topic article to `{output}/topics/{topic-slug}.md`
-3. Use the article template from `${CLAUDE_PLUGIN_ROOT}/templates/article-template.md`
+3. **Determine article structure:**
+   - If `.wiki-compiler.json` has an `article_sections` array: use those sections in order. Each section's `description` field tells you what content belongs there.
+   - If `article_sections` is absent (legacy configs without this field): fall back to the default template at `${CLAUDE_PLUGIN_ROOT}/templates/article-template.md`
 4. Fill every section with specific, factual content -- no placeholders
 5. **Summary** should be a standalone briefing: someone reading just this section should understand the current state
-6. **Timeline** entries must have real dates
-7. **Current State** should be immediately actionable -- what's true right now
-8. **Sources** must list every source file that contributed, using the configured link style
-9. **Coverage indicators** -- each section heading must include a coverage tag:
+6. **Sources** must list every source file that contributed, using the configured link style
+7. **Coverage indicators** -- each section heading must include a coverage tag:
    - `[coverage: high -- N sources]` -- 5+ sources contributed to this section, detailed synthesis. Reader can trust this section without checking raw files.
    - `[coverage: medium -- N sources]` -- 2-4 sources, decent but may miss detail. Reader should check raw sources for granular or recent questions.
    - `[coverage: low -- N sources]` -- 0-1 sources or sparse data. Reader should read the raw sources directly.

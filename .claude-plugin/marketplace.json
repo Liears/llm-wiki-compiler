@@ -1,7 +1,7 @@
 {
   "name": "llm-wiki-compiler",
   "owner": {
-    "name": "Sumant Subrahmanya"
+    "name": "Sumant"
   },
   "plugins": [
     {
@@ -10,7 +10,7 @@
       "description": "Compile markdown knowledge files into a topic-based wiki. Implements Karpathy's LLM Knowledge Base pattern.",
       "version": "1.0.0",
       "author": {
-        "name": "Sumant Subrahmanya"
+        "name": "Sumant"
       }
     }
   ]
