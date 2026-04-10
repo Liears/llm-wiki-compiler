@@ -4,6 +4,16 @@ A Claude Code plugin that compiles knowledge into a topic-based wiki — from sc
 
 **[Documentation](https://saydo-5cd0e3d7.mintlify.app/)**
 
+### What's New in v2.0
+
+- **Codebase mode** — generate wikis from code repositories, not just markdown files
+- **Auto-detection** — `/wiki-init` detects whether you're in a codebase or knowledge project
+- **Knowledge graph visualization** — interactive canvas-based graph of your wiki
+
+![Knowledge Graph — Dayflow codebase wiki](assets/knowledge-graph.png)
+
+![Article panel with coverage badges](assets/knowledge-graph-panel.png)
+
 ## Inspiration
 
 This plugin implements the **LLM Knowledge Base** pattern described by [Andrej Karpathy](https://x.com/karpathy/status/2039805659525644595):
@@ -14,7 +24,7 @@ The key insight: instead of re-reading hundreds of raw files every session, have
 
 ## What It Does
 
-You have 100+ markdown files across meetings, strategy docs, session notes, and research. Every Claude session re-reads them. This plugin compiles them into topic-based articles that synthesize everything known about each subject — with backlinks to sources.
+You have 100+ files across meetings, strategy docs, codebases, and research. Every Claude session re-reads them. This plugin compiles them into topic-based articles that synthesize everything known about each subject — with backlinks to sources.
 
 **Before:** Read 13+ raw files (~3,200 lines) per session
 **After:** Read INDEX + 2 topic articles (~330 lines) per session
@@ -83,20 +93,20 @@ claude --plugin-dir /path/to/llm-wiki-compiler/plugin
 ## Quick Start
 
 ```bash
-# 1. Initialize — auto-detects directories, samples your files, proposes a
-#    domain-specific article structure for your approval
+# 1. Initialize — auto-detects whether this is a codebase or knowledge project,
+#    samples your files, proposes a domain-specific article structure
 /wiki-init
 
 # 2. Compile — reads all sources, creates topic articles (5-10 min first run)
 /wiki-compile
 
-# 3. Browse in Obsidian — open wiki/INDEX.md to see all topics with backlinks
+# 3. Visualize — launch an interactive knowledge graph of your wiki
+/wiki-visualize
 
-# 4. (Optional) Add the wiki to your AGENTS.md so Claude uses it automatically
-#    See "Integrating with AGENTS.md" section below
+# 4. Browse in Obsidian — open wiki/INDEX.md to see all topics with backlinks
 ```
 
-After step 4, Claude naturally reads wiki articles as part of its normal session flow — no special commands needed.
+After setup, Claude reads wiki articles automatically at session start — no special commands needed. The wiki updates incrementally when sources change.
 
 ## Codebase Mode (New in v2.0)
 
@@ -206,18 +216,25 @@ For monorepos, the compiler detects service boundaries by looking for directorie
 
 ## Knowledge Graph Visualization
 
-See your compiled wiki as an interactive knowledge graph. Topics appear as nodes, concepts as connecting edges.
+See your compiled wiki as an interactive knowledge graph. Topics appear as nodes sized by source count, concepts as connecting edges.
 
 ```bash
 /wiki-visualize
 ```
 
 - **Hover** nodes to see source count and highlight connections
-- **Click** a node to read the full article in a side panel
+- **Click** a node to read the full article in a side panel with coverage badges
+- **Hover edges** to see concept names linking topics
 - **Search** to filter topics by name or alias
-- Canvas-based, zero dependencies, glassmorphism dark UI
+- **Escape** to close the article panel
 
-Works with both knowledge mode and codebase mode wikis.
+Canvas-based, zero dependencies, Nothing Design System tokens (Space Grotesk + Space Mono typography). Works with both knowledge mode and codebase mode wikis.
+
+You can also run it manually without the plugin:
+```bash
+node plugin/visualize/server.js --wiki-dir path/to/wiki/
+# Open http://localhost:3848
+```
 
 ## How It Works (Knowledge Mode)
 
