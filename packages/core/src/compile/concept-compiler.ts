@@ -1,7 +1,7 @@
 import type { ConceptArticle, ConceptState, TopicCandidate } from "@llm-wiki-compiler/types";
 import { type AgentAdapter } from "@llm-wiki-compiler/types";
 import type { AgentRunInput, AgentProviderConfig } from "@llm-wiki-compiler/types";
-import { BaseConceptCompiler } from "./index";
+import { BaseConceptCompiler } from "./base";
 import { createPromptLoader } from "@llm-wiki-compiler/prompts";
 import { createLogger, slugify } from "@llm-wiki-compiler/shared";
 

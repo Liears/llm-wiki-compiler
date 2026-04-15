@@ -1,7 +1,7 @@
 import type { TopicCandidate, TopicArticle, ArticleKind, ProjectConfig } from "@llm-wiki-compiler/types";
 import { type AgentAdapter, type AgentRunInput } from "@llm-wiki-compiler/types";
 import type { AgentProviderConfig } from "@llm-wiki-compiler/types";
-import { BaseTopicCompiler } from "./index";
+import { BaseTopicCompiler } from "./base";
 import { createPromptLoader, PromptNames } from "@llm-wiki-compiler/prompts";
 import { createArticleRenderer, ArticleSectionBuilder } from "@llm-wiki-compiler/templates";
 import { createLogger } from "@llm-wiki-compiler/shared";

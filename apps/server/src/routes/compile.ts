@@ -1,7 +1,19 @@
 import type { FastifyInstance } from "fastify";
-import { createConfigLoader, createScanner, createTopicDiscovery } from "@llm-wiki-compiler/core";
+import {
+  createConfigLoader,
+  createScanner,
+  createTopicDiscovery,
+  createAgentTopicCompiler,
+  createAgentConceptCompiler,
+  createArticleWriter,
+  createIndexBuilder,
+  createSchemaManager,
+  createCompileStateStore,
+} from "@llm-wiki-compiler/core";
+import { getAgentFactory } from "@llm-wiki-compiler/agents";
 import { taskManager } from "../tasks";
 import { createLogger } from "@llm-wiki-compiler/shared";
+import * as path from "path";
 
 const logger = createLogger("CompileRoutes");
 
@@ -33,14 +45,104 @@ export default async function compileRoutes(fastify: FastifyInstance, opts: Reco
             const discovery = createTopicDiscovery();
             const topics = await discovery.discover({ scanResult, config });
 
+            // Create output directory
+            const outputDir = path.resolve(cwd, config.output);
+            const fs = await import("fs/promises");
+            await fs.mkdir(outputDir, { recursive: true });
+
+            // Set up compiler services
+            const agentFactory = getAgentFactory();
+            const agentConfig = config.agent || { provider: "claude-code", timeout_ms: 120000 };
+            const agentAdapter = agentFactory.get(agentConfig.provider);
+
+            const topicCompiler = createAgentTopicCompiler(agentAdapter, agentConfig, ".");
+            const conceptCompiler = createAgentConceptCompiler(agentAdapter, agentConfig);
+            const articleWriter = createArticleWriter(outputDir, config.link_style);
+            const indexBuilder = createIndexBuilder(outputDir);
+            const schemaManager = createSchemaManager(outputDir);
+            const stateStore = createCompileStateStore();
+
+            const topicsCreated: string[] = [];
+            const topicsUpdated: string[] = [];
+            const conceptsCreated: string[] = [];
+            const errors: any[] = [];
+
+            // Compile topics
+            for (const topic of topics) {
+              try {
+                const article = await topicCompiler.compile(topic);
+                await articleWriter.writeTopic(article);
+
+                if (await articleWriter.exists(topic.slug, "topic")) {
+                  topicsCreated.push(topic.slug);
+                } else {
+                  topicsUpdated.push(topic.slug);
+                }
+              } catch (error) {
+                errors.push({
+                  topicSlug: topic.slug,
+                  error: error instanceof Error ? error.message : String(error),
+                  phase: "topic-compile",
+                });
+              }
+            }
+
+            // Compile concepts
+            if (topicsCreated.length + topicsUpdated.length > 0) {
+              try {
+                const allTopicSlugs = topicsCreated.concat(topicsUpdated);
+                const conceptResults = await conceptCompiler.compile(allTopicSlugs);
+
+                for (const result of conceptResults) {
+                  if (result.isNew) {
+                    conceptsCreated.push(result.slug);
+                  }
+                }
+              } catch (error) {
+                // Continue even if concept compilation fails
+              }
+            }
+
+            // Build index
+            try {
+              await indexBuilder.build({
+                config,
+                scanResult,
+                topics: topics.map((t) => ({
+                  slug: t.slug,
+                  title: t.title,
+                  sourceCount: t.sourceFiles.length,
+                  lastUpdated: new Date().toISOString(),
+                })),
+              });
+            } catch (error) {
+              logger.error("Failed to build index:", error);
+            }
+
+            // Update state
+            try {
+              await stateStore.saveCompileState({
+                last_compiled: new Date().toISOString(),
+                files: {},
+                topics: topics.map((t) => ({
+                  slug: t.slug,
+                  title: t.title,
+                  sourceFiles: t.sourceFiles,
+                  lastCompiled: new Date().toISOString(),
+                })),
+                concepts: [],
+              });
+            } catch (error) {
+              logger.error("Failed to save state:", error);
+            }
+
             return {
-              topicsCompiling: topics.length,
+              topicsCompiled: topicsCreated.length + topicsUpdated.length,
+              topicsCreated,
+              topicsUpdated,
+              conceptsCreated,
               sourcesScanned: scanResult.files.length,
-              topics: topics.map((t) => ({
-                slug: t.slug,
-                title: t.title,
-                sourceFiles: t.sourceFiles.length,
-              })),
+              errors,
             };
           },
         });

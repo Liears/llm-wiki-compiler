@@ -1,7 +1,18 @@
 #!/usr/bin/env node
 import cac from "cac";
 import pc from "picocolors";
-import { createConfigLoader, createScanner, createTopicDiscovery } from "@llm-wiki-compiler/core";
+import {
+  createConfigLoader,
+  createScanner,
+  createTopicDiscovery,
+  createAgentTopicCompiler,
+  createAgentConceptCompiler,
+  createArticleWriter,
+  createIndexBuilder,
+  createSchemaManager,
+  createCompileStateStore,
+  createLogManager,
+} from "@llm-wiki-compiler/core";
 import { getAgentFactory } from "@llm-wiki-compiler/agents";
 import { createLogger } from "@llm-wiki-compiler/shared";
 import * as path from "path";
@@ -96,25 +107,147 @@ cli
       }
       console.log();
 
-      // TODO: Implement actual compilation with agent
+      // Create output directory
       const outputDir = path.resolve(cwd, config.output);
       const fs = await import("fs/promises");
       await fs.mkdir(outputDir, { recursive: true });
 
-      // Create a simple output for now
+      // Set up compiler services
+      const agentFactory = getAgentFactory();
+      const agentConfig = config.agent || { provider: "claude-code", timeout_ms: 120000 };
+      const agentAdapter = agentFactory.get(agentConfig.provider);
+
+      const topicCompiler = createAgentTopicCompiler(agentAdapter, agentConfig, ".");
+      const conceptCompiler = createAgentConceptCompiler(agentAdapter, agentConfig);
+      const articleWriter = createArticleWriter(outputDir, config.link_style);
+      const indexBuilder = createIndexBuilder(outputDir);
+      const schemaManager = createSchemaManager(outputDir);
+      const stateStore = createCompileStateStore();
+      const logManager = createLogManager();
+
+      const startTime = Date.now();
+      const topicsCreated: string[] = [];
+      const topicsUpdated: string[] = [];
+      const conceptsCreated: string[] = [];
+      const errors: any[] = [];
+
+      console.log(pc.cyan("Compiling topics..."));
+
+      // Compile topics
+      for (let i = 0; i < topics.length; i++) {
+        const topic = topics[i];
+        console.log(`  [${i + 1}/${topics.length}] ${topic.slug}...`);
+
+        try {
+          const article = await topicCompiler.compile(topic);
+          await articleWriter.writeTopic(article);
+
+          if (await articleWriter.exists(topic.slug, "topic")) {
+            topicsUpdated.push(topic.slug);
+          } else {
+            topicsCreated.push(topic.slug);
+          }
+          console.log(`    ${pc.green("✓")} Done`);
+        } catch (error) {
+          logger.error(`Failed to compile topic ${topic.slug}:`, error);
+          errors.push({
+            topicSlug: topic.slug,
+            error: error instanceof Error ? error.message : String(error),
+            phase: "topic-compile",
+          });
+          console.log(`    ${pc.red("✗")} Failed`);
+        }
+      }
+
+      // Compile concepts
+      if (topicsCreated.length + topicsUpdated.length > 0) {
+        console.log();
+        console.log(pc.cyan("Discovering concepts..."));
+
+        try {
+          const allTopicSlugs = topicsCreated.concat(topicsUpdated);
+          const conceptResults = await conceptCompiler.compile(allTopicSlugs);
+
+          for (const result of conceptResults) {
+            if (result.isNew) {
+              conceptsCreated.push(result.slug);
+            }
+          }
+
+          if (conceptResults.length > 0) {
+            console.log(`  Found ${conceptResults.length} concept(s)`);
+          } else {
+            console.log(`  ${pc.dim("No concepts found")}`);
+          }
+        } catch (error) {
+          logger.error("Failed to compile concepts:", error);
+        }
+      }
+
+      console.log();
+      console.log(pc.cyan("Building wiki index..."));
+
+      try {
+        const indexContent = await indexBuilder.build({
+          config,
+          scanResult,
+          topics: topics.map((t) => ({
+            slug: t.slug,
+            title: t.title,
+            sourceCount: t.sourceFiles.length,
+            lastUpdated: new Date().toISOString(),
+          })),
+        });
+      } catch (error) {
+        logger.error("Failed to build index:", error);
+      }
+
+      // Update state
+      console.log(pc.cyan("Updating compile state..."));
+      try {
+        await stateStore.saveCompileState({
+          last_compiled: new Date().toISOString(),
+          files: {},
+          topics: topics.map((t) => ({
+            slug: t.slug,
+            title: t.title,
+            sourceFiles: t.sourceFiles,
+            lastCompiled: new Date().toISOString(),
+          })),
+          concepts: [],
+        });
+      } catch (error) {
+        logger.error("Failed to save state:", error);
+      }
+
+      const durationMs = Date.now() - startTime;
+
+      // Summary
       const result = {
-        topicsCompiled: topics.length,
+        topicsCompiled: topicsCreated.length + topicsUpdated.length,
+        topicsCreated: topicsCreated.length,
+        topicsUpdated: topicsUpdated.length,
+        conceptsCreated: conceptsCreated.length,
         sourcesScanned: scanResult.files.length,
-        durationMs: 0,
-        errors: [],
+        durationMs,
+        errors,
       };
 
+      console.log();
       if (options.json) {
         console.log(JSON.stringify(result, null, 2));
       } else {
         console.log(pc.green(`✓ Compilation complete`));
-        console.log(pc.dim(`  Topics: ${result.topicsCompiled}`));
+        console.log(pc.dim(`  Duration: ${(durationMs / 1000).toFixed(1)}s`));
         console.log(pc.dim(`  Sources: ${result.sourcesScanned}`));
+        console.log(pc.dim(`  Topics: ${result.topicsCompiled} (${result.topicsCreated} new, ${result.topicsUpdated} updated)`));
+        if (result.conceptsCreated > 0) {
+          console.log(pc.dim(`  Concepts: ${result.conceptsCreated}`));
+        }
+        if (errors.length > 0) {
+          console.log(pc.red(`\n⚠ ${errors.length} error(s) occurred`));
+        }
+        console.log(pc.dim(`\nOutput: ${outputDir}`));
       }
     } catch (error) {
       logger.error("Compilation failed:", error);
