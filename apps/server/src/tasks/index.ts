@@ -27,7 +27,11 @@ export class TaskManager {
       logger.error(`Task ${taskId} execution failed:`, err);
     });
 
-    return taskStore.get(taskId)!;
+    const task = await taskStore.get(taskId);
+    if (!task) {
+      throw new Error(`Task ${taskId} was not created successfully`);
+    }
+    return task;
   }
 
   private async executeTask(taskId: string, options: TaskOptions) {

@@ -2,12 +2,12 @@ import Fastify from "fastify";
 import autoload from "@fastify/autoload";
 import { configLoader } from "./config";
 import { taskManager } from "./tasks";
-import { wikiRoutes } from "./routes/wiki";
-import { projectRoutes } from "./routes/project";
-import { compileRoutes } from "./routes/compile";
-import { searchRoutes } from "./routes/search";
-import { agentRoutes } from "./routes/agents";
-import { graphRoutes } from "./routes/graph";
+import wikiRoutes from "./routes/wiki";
+import projectRoutes from "./routes/project";
+import compileRoutes from "./routes/compile";
+import searchRoutes from "./routes/search";
+import agentRoutes from "./routes/agents";
+import graphRoutes from "./routes/graph";
 import { createLogger } from "@llm-wiki-compiler/shared";
 
 const logger = createLogger("Server");

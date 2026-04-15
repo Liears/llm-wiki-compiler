@@ -88,7 +88,7 @@ class DefaultAgentFactory implements AgentAdapterFactory {
   }
 
   getCapabilities(provider: AgentProvider): AgentCapabilities {
-    return PROVIDER_CAPABABILITIES[provider];
+    return PROVIDER_CAPABILITIES[provider];
   }
 
   listProviders(): AgentProvider[] {

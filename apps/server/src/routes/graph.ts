@@ -1,6 +1,6 @@
 import type { FastifyInstance } from "fastify";
 import { createConfigLoader, createArticleWriter } from "@llm-wiki-compiler/core";
-import type { GraphResponse, GraphTopicNode, GraphConceptNode } from "@llm-wiki-compiler/types";
+import type { GraphResponse, GraphTopicNode, GraphConceptNode, GraphEdge } from "@llm-wiki-compiler/types";
 import * as path from "path";
 import { createLogger } from "@llm-wiki-compiler/shared";
 
@@ -49,7 +49,7 @@ export default async function graphRoutes(fastify: FastifyInstance, opts: Record
       const conceptSlugs = await articleWriter.listConcepts();
 
       const nodes: Array<GraphTopicNode | GraphConceptNode> = [];
-      const edges: Array<{ source: string; target: string; type: string }> = [];
+      const edges: GraphEdge[] = [];
 
       // Build topic nodes
       for (const slug of topicSlugs) {

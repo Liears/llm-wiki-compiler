@@ -1,6 +1,7 @@
 import type { FastifyInstance } from "fastify";
 import { configLoader } from "../config";
 import { createLogger } from "@llm-wiki-compiler/shared";
+import * as path from "path";
 
 const logger = createLogger("ProjectRoutes");
 
@@ -78,10 +79,7 @@ export default async function projectRoutes(fastify: FastifyInstance, opts: Reco
 
       // Check if wiki output exists
       const fs = await import("fs/promises");
-      const outputPath = config.output.startsWith("/")
-        ? config.output
-        : `/${config.output}`;
-      const topicPath = path.join(cwd, outputPath, "topics");
+      const topicPath = path.resolve(cwd, config.output, "topics");
 
       let wikiExists = false;
       try {

@@ -129,7 +129,7 @@ export class Scanner implements ScannerService {
     return [pattern];
   }
 
-  private shouldExclude(filePath: string, excludePatterns?: string[]): boolean {
+  protected shouldExclude(filePath: string, excludePatterns?: string[]): boolean {
     const allExcludes = [...this.DEFAULT_EXCLUDE_PATTERNS, ...(excludePatterns || [])];
 
     for (const pattern of allExcludes) {
@@ -152,7 +152,7 @@ export class Scanner implements ScannerService {
     return new RegExp(`^${pattern}(/|$)`);
   }
 
-  private extractTitle(content: string, filePath: string): string | undefined {
+  protected extractTitle(content: string, filePath: string): string | undefined {
     if (!isMarkdownFile(filePath)) {
       return undefined;
     }
@@ -161,7 +161,7 @@ export class Scanner implements ScannerService {
     return match?.[1]?.trim() || undefined;
   }
 
-  private detectLanguage(filePath: string, content: string): string | undefined {
+  protected detectLanguage(filePath: string, content: string): string | undefined {
     const ext = getFileExtension(filePath).toLowerCase();
 
     const languageMap: Record<string, string> = {
@@ -267,7 +267,7 @@ export class CodebaseScanner extends Scanner {
     ".env.example",
   ];
 
-  scanKnowledgeFiles(
+  async scanKnowledgeFiles(
     config: ProjectConfig,
     projectRoot: string,
     topicDirectory: string
@@ -300,6 +300,7 @@ export class CodebaseScanner extends Scanner {
             mtimeMs: stats.mtimeMs,
             content,
             title: this.extractTitle(content, filePath),
+            language: this.detectLanguage(filePath, content),
           });
         }
       } catch (error) {
@@ -307,10 +308,10 @@ export class CodebaseScanner extends Scanner {
       }
     }
 
-    return Promise.resolve(result);
+    return result;
   }
 
-  scanSourceFiles(
+  async scanSourceFiles(
     config: ProjectConfig,
     projectRoot: string,
     topicDirectory: string,

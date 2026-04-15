@@ -5,6 +5,7 @@ import type {
   SourceFile,
 } from "@llm-wiki-compiler/types";
 import { createLogger } from "@llm-wiki-compiler/shared";
+import * as path from "path";
 
 // ============================================================================
 // Search Service

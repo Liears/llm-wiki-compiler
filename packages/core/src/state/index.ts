@@ -33,7 +33,7 @@ export interface CompileStateStore {
     outputDir: string,
     topicState: TopicState
   ): Promise<void>;
-  isStateChanged(projectRoot: string, outputDir: string, filePath: string, mtimeMs: number): Promise<boolean>;
+  isChanged(projectRoot: string, outputDir: string, filePath: string, mtimeMs: number): Promise<boolean>;
 }
 
 export class FileSystemCompileStateStore implements CompileStateStore {
@@ -249,7 +249,7 @@ export class FileSystemTaskStore implements TaskStore {
   async setError(id: string, code: string, message: string, details?: unknown): Promise<void> {
     await this.update(id, {
       status: "failed",
-      finishAt: new Date().toISOString(),
+      finishedAt: new Date().toISOString(),
       error: {
         code,
         message,

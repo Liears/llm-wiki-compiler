@@ -43,7 +43,7 @@ export abstract class BaseAgentAdapter {
       const durationMs = Date.now() - startTime;
 
       if (error instanceof TimeoutError) {
-        this.logger.error(`Agent ${this.name} timed out after ${timeoutMs}ms`);
+        this.logger.error(`Agent ${this.name} timed out after ${timeout}ms`);
         return {
           text: "",
           rawStdout: "",
