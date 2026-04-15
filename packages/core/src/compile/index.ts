@@ -6,10 +6,11 @@ import type {
   TopicArticle,
   TopicCandidate,
   ConceptArticle,
-  ArticlKind,
+  ArticleKind,
   ProjectConfig,
 } from "@llm-wiki-compiler/types";
 import { createLogger, asyncMap, withTimeout, retry } from "@llm-wiki-compiler/shared";
+import { createTopicDiscovery } from "../discovery";
 
 // ============================================================================
 // Compile Planner
@@ -17,21 +18,34 @@ import { createLogger, asyncMap, withTimeout, retry } from "@llm-wiki-compiler/s
 
 export class CompilePlanner {
   private logger = createLogger("CompilePlanner");
+  private topicDiscovery = createTopicDiscovery();
 
   async plan(input: CompilePlanInput): Promise<CompilePlan> {
     const { config, state, scanResult } = input;
-    const { files } = scanResult;
 
     this.logger.info("Planning compilation...");
 
     // Determine mode
     const mode = state ? "incremental" : "full";
 
-    // Identify topics that need compilation
-    const topicsToCompile = this.identifyTopicsToCompile(files, state, config);
+    // Discover topics from scan result
+    const discoveredTopics = await this.topicDiscovery.discover({
+      scanResult,
+      config,
+      existingState: state,
+    });
 
-    // Determine if concepts should be compiled
-    const conceptsEnabled = true; // Always enable concepts in v1
+    // In v1, compile all discovered topics (add isNew and hasChanges flags based on state)
+    const existingTopicSlugs = new Set(state?.topics.map((t: TopicState) => t.slug) || []);
+    const topicsToCompile = discoveredTopics.map((topic) => ({
+      slug: topic.slug,
+      title: topic.title,
+      sourceFiles: topic.sourceFiles,
+      isNew: !existingTopicSlugs.has(topic.slug),
+      hasChanges: !existingTopicSlugs.has(topic.slug), // In v1, treat new topics as changed
+    }));
+
+    const conceptsEnabled = true;
 
     // Set concurrency
     const maxConcurrency = config.agent?.max_concurrency ?? 2;
@@ -48,16 +62,6 @@ export class CompilePlanner {
     );
 
     return plan;
-  }
-
-  private identifyTopicsToCompile(
-    files: any[],
-    state: any,
-    config: any
-  ): any[] {
-    // This will be enhanced when we have discovery results
-    // For now, create a simple plan based on file changes
-    return [];
   }
 }
 
@@ -128,7 +132,7 @@ export class CompileExecutor {
 
             errors.push({
               topicSlug: item.slug,
-              error = error instanceof Error ? error.message : String(error),
+              error: error instanceof Error ? error.message : String(error),
               phase: "topic-compile",
             });
 
