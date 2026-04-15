@@ -1,0 +1,26 @@
+{
+  "name": "@llm-wiki-compiler/cli",
+  "version": "2.0.0",
+  "private": true,
+  "main": "./dist/index.js",
+  "bin": {
+    "wiki": "./dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "tsx watch src/index.ts",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@llm-wiki-compiler/core": "workspace:^",
+    "@llm-wiki-compiler/types": "workspace:^",
+    "cac": "^6.7.14",
+    "picocolors": "^1.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "tsx": "^4.7.0",
+    "typescript": "^5.4.0"
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "name": "llm-wiki-compiler",
+  "version": "2.0.0",
+  "description": "LLM Wiki Compiler - Independent application for compiling source files into topic-based wiki articles",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "turbo run build",
+    "dev": "turbo run dev",
+    "lint": "turbo run lint",
+    "test": "turbo run test",
+    "clean": "turbo run clean && rm -rf node_modules",
+    "compile": "turbo run build --filter=@llm-wiki-compiler/cli && node apps/cli/dist/index.js"
+  },
+  "devDependencies": {
+    "turbo": "^2.0.0",
+    "typescript": "^5.4.0"
+  },
+  "packageManager": "pnpm@8.15.0",
+  "engines": {
+    "node": ">=18.0.0",
+    "pnpm": ">=8.0.0"
+  }
+}

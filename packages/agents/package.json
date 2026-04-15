@@ -1,0 +1,24 @@
+{
+  "name": "@llm-wiki-compiler/agents",
+  "version": "2.0.0",
+  "private": true,
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "scripts": {
+    "build": "tsc",
+    "clean": "rm -rf dist",
+    "lint": "eslint src --ext .ts"
+  },
+  "dependencies": {
+    "@llm-wiki-compiler/types": "workspace:^",
+    "@llm-wiki-compiler/shared": "workspace:^",
+    "execa": "^8.0.1",
+    "zod": "^3.22.0"
+  },
+  "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^7.0.0",
+    "@typescript-eslint/parser": "^7.0.0",
+    "eslint": "^8.57.0",
+    "typescript": "^5.4.0"
+  }
+}
